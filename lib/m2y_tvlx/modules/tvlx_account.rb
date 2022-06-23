@@ -61,18 +61,17 @@ module M2yTvlx
       (with_future ? getFutureTransactions(params) : []) + transactions
     end
 
-    def getPaginatedTransactions(params, page, size, with_future = true)
+    def getPaginatedTransactions(params, page, size)
       params[:nrSeq] = 0
       params[:nrInst] = getInstitution
-      if !params[:page].nil? && params[:page] > 0
-        transactions = []
-      else
-        response = @request.post(@url + PAGINATED_EXTRACT_PATH + "?page=#{page}&size=#{size}", params)
-        transactions = response['consultaLancamento']
-      end
+      transactions = if !params[:page].nil? && params[:page] > 0
+                       []
+                     else
+                       @request.post(@url + PAGINATED_EXTRACT_PATH + "?page=#{page}&size=#{size}", params)
+                     end
       # fixing cdt_fields
-      if !transactions.nil?
-        transactions.each do |transaction|
+      if !transactions['content'].nil?
+        transactions['content'].each do |transaction|
           transaction['dataOrigem'] = transaction['dtLanc']
           transaction['descricaoAbreviada'] =
             transaction['dsLanc'] + (transaction['nmFav'].nil? ? '' : transaction['nmFav'])
@@ -83,10 +82,8 @@ module M2yTvlx
           transaction['flagCredito'] = transaction['tpSinal'] == 'C' ? 1 : 0
         end
       else
-        transactions = []
+        transactions
       end
-
-      (with_future ? getFutureTransactions(params) : []) + transactions
     end
 
     def getFutureTransactions(params)
